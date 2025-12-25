@@ -2,11 +2,11 @@ plugins {
     id 'java'
 }
 
-version = '1.0'
+version = '1.5'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(8)
+        languageVersion = JavaLanguageVersion.of(17)
     }
 }
 
@@ -27,13 +27,9 @@ dependencies {
 }
 
 jar {
-    archiveFileName = 'Javamod.jar'
+    archiveFileName = 'ModInfoPlus.jar'
     
-    from {
-        configurations.runtimeClasspath.collect { 
-            it.isDirectory() ? it : zipTree(it) 
-        }
-    }
+    from(sourceSets.main.output)
     
     from(rootDir) {
         include 'mod.hjson'
@@ -45,14 +41,9 @@ jar {
     }
 }
 
-tasks.register('deploy', Copy) {
-    dependsOn(jar)
-    from(jar)
-    def modsDir = System.getenv('MINDUSTRY_MODS_DIR') ?: "${System.getProperty('user.home')}/.local/share/Mindustry/mods"
-    into(modsDir)
-}
-
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 8
+    sourceCompatibility = 8
+    targetCompatibility = 8
+    options.compilerArgs.addAll(['--release', '8'])
 }
