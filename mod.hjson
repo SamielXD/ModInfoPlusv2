@@ -6,6 +6,6 @@
   "version": "1.5",
   "minGameVersion": "154",
   "java": true,
-  "main": "modinfoplus.ModInfoPlus",
+  "main": "ModInfoPlus",
   "hidden": false
 }
