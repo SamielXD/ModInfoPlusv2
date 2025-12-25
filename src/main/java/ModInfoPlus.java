@@ -1,4 +1,5 @@
 import arc.*;
+import arc.func.*;
 import arc.graphics.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
