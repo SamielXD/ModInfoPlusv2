@@ -1,5 +1,3 @@
-package modinfoplus;
-
 import arc.*;
 import arc.struct.*;
 import arc.util.*;
