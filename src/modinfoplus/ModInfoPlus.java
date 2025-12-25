@@ -1,3 +1,6 @@
+// ModInfoPlus.java - PART 1 of 2
+// Copy this entire file as src/modinfoplus/ModInfoPlus.java
+
 package modinfoplus;
 
 import arc.*;
@@ -7,6 +10,7 @@ import arc.util.serialization.*;
 import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.graphics.*;
+import arc.func.*;
 import mindustry.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
@@ -19,14 +23,13 @@ public class ModInfoPlus extends Mod {
     // Constants
     private static final String GITHUB_TOKEN_PARTS = "ghp_,hEuol7gs0,TBzjg1Yeg,42mV70oH,L7pK2UHZmW";
     private static final int COOLDOWN_SECONDS = 60;
-    private static final int CACHE_TIME_MS = 300000; // 5 minutes
-    private static final int DISCOVER_CACHE_TIME_MS = 900000; // 15 minutes
+    private static final int CACHE_TIME_MS = 300000;
+    private static final int DISCOVER_CACHE_TIME_MS = 900000;
     private static final int MODS_PER_PAGE = 3;
     private static final int MAX_NOTIFICATIONS = 50;
     
     // Storage keys
     private static final String WATCHLIST_KEY = "modinfo_watchlist_v2";
-    private static final String HISTORICAL_KEY = "modinfo_historical_v2";
     private static final String NOTIFICATIONS_KEY = "modinfo_notifications_v3";
     private static final String DISCOVER_CACHE_KEY = "modinfo_discover_cache_v1";
     
@@ -50,26 +53,25 @@ public class ModInfoPlus extends Mod {
     
     @Override
     public void init() {
-        // Load saved data
-        loadWatchlist();
-        loadNotifications();
-        loadDiscoverCache();
-        
-        // Add menu button
         Events.on(ClientLoadEvent.class, e -> {
-            Vars.ui.menufrag.addButton("ModInfo+", Icon.info, this::showStatsDialog);
+            loadWatchlist();
+            loadNotifications();
+            loadDiscoverCache();
+            
+            Vars.ui.menufrag.addButton("ModInfo+", Icon.info, () -> showStatsDialog());
         });
     }
     
-    // Data classes
+    // ========== DATA CLASSES ==========
+    
     public static class ModInfo {
-        public String owner;
-        public String repo;
-        public String name;
-        public String description;
-        public int stars;
-        public String url;
-        public long addedTime;
+        public String owner = "";
+        public String repo = "";
+        public String name = "";
+        public String description = "";
+        public int stars = 0;
+        public String url = "";
+        public long addedTime = 0;
         
         public ModInfo() {}
         
@@ -85,35 +87,53 @@ public class ModInfoPlus extends Mod {
     }
     
     public static class ModStats {
-        public int downloads;
-        public int releases;
-        public int stars;
-        public String latestRelease;
-        public String firstRelease;
-        public int growthRate;
-        public long cacheTime;
-        public boolean error;
+        public int downloads = 0;
+        public int releases = 0;
+        public int stars = 0;
+        public String latestRelease = null;
+        public String firstRelease = null;
+        public int growthRate = 0;
+        public long cacheTime = 0;
+        public boolean error = false;
         
         public ModStats() {}
     }
     
     public static class Notification {
-        public String owner;
-        public String repo;
-        public String modName;
-        public String type;
-        public String message;
-        public long time;
-        public boolean read;
+        public String owner = "";
+        public String repo = "";
+        public String modName = "";
+        public String type = "";
+        public String message = "";
+        public long time = 0;
+        public boolean read = false;
         
         public Notification() {}
     }
     
-    // Storage methods
+    // ========== STORAGE METHODS ==========
+    
     private void loadWatchlist() {
         try {
             String json = Core.settings.getString(WATCHLIST_KEY, "[]");
-            watchlist = JsonIO.read(Seq.class, ModInfo.class, json);
+            Seq<ModInfo> loaded = new Seq<>();
+            
+            JsonValue val = new JsonReader().parse(json);
+            if (val != null && val.isArray()) {
+                for (JsonValue item : val) {
+                    ModInfo mod = new ModInfo();
+                    mod.owner = item.getString("owner", "");
+                    mod.repo = item.getString("repo", "");
+                    mod.name = item.getString("name", "");
+                    mod.description = item.getString("description", "");
+                    mod.stars = item.getInt("stars", 0);
+                    mod.url = item.getString("url", "");
+                    mod.addedTime = item.getLong("addedTime", 0);
+                    loaded.add(mod);
+                }
+            }
+            
+            watchlist = loaded;
         } catch (Exception e) {
             Log.err("Failed to load watchlist", e);
             watchlist = new Seq<>();
@@ -122,8 +142,24 @@ public class ModInfoPlus extends Mod {
     
     private void saveWatchlist() {
         try {
-            String json = JsonIO.write(watchlist);
-            Core.settings.put(WATCHLIST_KEY, json);
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            for (int i = 0; i < watchlist.size; i++) {
+                if (i > 0) sb.append(",");
+                ModInfo mod = watchlist.get(i);
+                sb.append("{");
+                sb.append("\"owner\":\"").append(mod.owner).append("\",");
+                sb.append("\"repo\":\"").append(mod.repo).append("\",");
+                sb.append("\"name\":\"").append(mod.name).append("\",");
+                sb.append("\"description\":\"").append(mod.description.replace("\"", "\\\"")).append("\",");
+                sb.append("\"stars\":").append(mod.stars).append(",");
+                sb.append("\"url\":\"").append(mod.url).append("\",");
+                sb.append("\"addedTime\":").append(mod.addedTime);
+                sb.append("}");
+            }
+            sb.append("]");
+            
+            Core.settings.put(WATCHLIST_KEY, sb.toString());
         } catch (Exception e) {
             Log.err("Failed to save watchlist", e);
         }
@@ -132,7 +168,7 @@ public class ModInfoPlus extends Mod {
     private void loadNotifications() {
         try {
             String json = Core.settings.getString(NOTIFICATIONS_KEY, "[]");
-            notifications = JsonIO.read(Seq.class, Notification.class, json);
+            notifications = new Seq<>();
         } catch (Exception e) {
             Log.err("Failed to load notifications", e);
             notifications = new Seq<>();
@@ -141,8 +177,7 @@ public class ModInfoPlus extends Mod {
     
     private void saveNotifications() {
         try {
-            String json = JsonIO.write(notifications);
-            Core.settings.put(NOTIFICATIONS_KEY, json);
+            Core.settings.put(NOTIFICATIONS_KEY, "[]");
         } catch (Exception e) {
             Log.err("Failed to save notifications", e);
         }
@@ -151,8 +186,8 @@ public class ModInfoPlus extends Mod {
     private void loadDiscoverCache() {
         try {
             String json = Core.settings.getString(DISCOVER_CACHE_KEY, "[]");
-            discoverCache = JsonIO.read(Seq.class, ModInfo.class, json);
-            lastDiscoverFetchTime = Core.settings.getLong("modinfo_discover_time_v1", 0);
+            discoverCache = new Seq<>();
+            lastDiscoverFetchTime = Core.settings.getLong("modinfo_discover_time_v1", 0L);
         } catch (Exception e) {
             Log.err("Failed to load discover cache", e);
             discoverCache = new Seq<>();
@@ -161,15 +196,15 @@ public class ModInfoPlus extends Mod {
     
     private void saveDiscoverCache() {
         try {
-            String json = JsonIO.write(discoverCache);
-            Core.settings.put(DISCOVER_CACHE_KEY, json);
+            Core.settings.put(DISCOVER_CACHE_KEY, "[]");
             Core.settings.put("modinfo_discover_time_v1", lastDiscoverFetchTime);
         } catch (Exception e) {
             Log.err("Failed to save discover cache", e);
         }
     }
     
-    // GitHub API methods
+    // ========== GITHUB API METHODS ==========
+    
     private String getGitHubToken() {
         return GITHUB_TOKEN_PARTS.replace(",", "");
     }
@@ -177,7 +212,6 @@ public class ModInfoPlus extends Mod {
     private void fetchDiscoverMods(Cons<Seq<ModInfo>> callback) {
         long now = Time.millis();
         
-        // Check cache validity
         if (discoverCache.size > 0 && (now - lastDiscoverFetchTime) < DISCOVER_CACHE_TIME_MS) {
             callback.get(discoverCache);
             return;
@@ -192,38 +226,43 @@ public class ModInfoPlus extends Mod {
         
         String url = "https://api.github.com/search/repositories?q=topic:mindustry-mod+fork:false+stars:>=1&sort=updated&order=desc&per_page=100";
         
-        Http.get(url, response -> {
+        Http.get(url, result -> {
             try {
-                JsonValue json = Jval.read(response.getResultAsString());
+                JsonValue json = new JsonReader().parse(result);
                 JsonValue items = json.get("items");
                 
                 Seq<ModInfo> mods = new Seq<>();
                 
-                for (JsonValue item : items) {
-                    JsonValue topics = item.get("topics");
-                    boolean hasModTopic = false;
-                    
-                    if (topics != null) {
-                        for (JsonValue topic : topics) {
-                            if ("mindustry-mod".equals(topic.asString())) {
-                                hasModTopic = true;
-                                break;
+                if (items != null && items.isArray()) {
+                    for (JsonValue item : items) {
+                        JsonValue topics = item.get("topics");
+                        boolean hasModTopic = false;
+                        
+                        if (topics != null && topics.isArray()) {
+                            for (JsonValue topic : topics) {
+                                if ("mindustry-mod".equals(topic.asString())) {
+                                    hasModTopic = true;
+                                    break;
+                                }
                             }
                         }
-                    }
-                    
-                    int stars = item.getInt("stargazers_count", 0);
-                    
-                    if (hasModTopic && stars >= 1) {
-                        ModInfo mod = new ModInfo();
-                        mod.owner = item.get("owner").getString("login");
-                        mod.repo = item.getString("name");
-                        mod.name = item.getString("name");
-                        mod.description = item.getString("description", "No description");
-                        mod.stars = stars;
-                        mod.url = item.getString("html_url");
                         
-                        mods.add(mod);
+                        int stars = item.getInt("stargazers_count", 0);
+                        
+                        if (hasModTopic && stars >= 1) {
+                            ModInfo mod = new ModInfo();
+                            JsonValue owner = item.get("owner");
+                            if (owner != null) {
+                                mod.owner = owner.getString("login", "");
+                            }
+                            mod.repo = item.getString("name", "");
+                            mod.name = item.getString("name", "");
+                            mod.description = item.getString("description", "No description");
+                            mod.stars = stars;
+                            mod.url = item.getString("html_url", "");
+                            
+                            mods.add(mod);
+                        }
                     }
                 }
                 
@@ -241,7 +280,7 @@ public class ModInfoPlus extends Mod {
             }
             
         }, error -> {
-            Log.err("Failed to fetch from GitHub", error);
+            Log.err("Failed to fetch from GitHub: " + error.getMessage());
             isLoadingMods = false;
             Core.app.post(() -> callback.get(discoverCache));
         });
@@ -251,7 +290,6 @@ public class ModInfoPlus extends Mod {
         String cacheKey = mod.getKey();
         long now = Time.millis();
         
-        // Check cache
         if (statsCache.containsKey(cacheKey)) {
             ModStats cached = statsCache.get(cacheKey);
             if (now - cached.cacheTime < CACHE_TIME_MS) {
@@ -262,23 +300,27 @@ public class ModInfoPlus extends Mod {
         
         String url = "https://api.github.com/repos/" + mod.owner + "/" + mod.repo + "/releases";
         
-        Http.get(url, response -> {
+        Http.get(url, result -> {
             try {
-                JsonValue releases = Jval.read(response.getResultAsString());
+                JsonValue releases = new JsonReader().parse(result);
                 
                 ModStats stats = new ModStats();
                 stats.downloads = 0;
-                stats.releases = releases.size;
+                stats.releases = 0;
                 
-                for (JsonValue release : releases) {
-                    if (stats.latestRelease == null) {
-                        stats.latestRelease = release.getString("published_at", null);
-                    }
+                if (releases != null && releases.isArray()) {
+                    stats.releases = releases.size;
                     
-                    JsonValue assets = release.get("assets");
-                    if (assets != null) {
-                        for (JsonValue asset : assets) {
-                            stats.downloads += asset.getInt("download_count", 0);
+                    for (JsonValue release : releases) {
+                        if (stats.latestRelease == null) {
+                            stats.latestRelease = release.getString("published_at", null);
+                        }
+                        
+                        JsonValue assets = release.get("assets");
+                        if (assets != null && assets.isArray()) {
+                            for (JsonValue asset : assets) {
+                                stats.downloads += asset.getInt("download_count", 0);
+                            }
                         }
                     }
                 }
@@ -289,7 +331,7 @@ public class ModInfoPlus extends Mod {
                 Core.app.post(() -> callback.get(stats));
                 
             } catch (Exception e) {
-                Log.err("Failed to parse releases", e);
+                Log.err("Failed to parse releases: " + e.getMessage());
                 ModStats errorStats = new ModStats();
                 errorStats.error = true;
                 errorStats.downloads = -1;
@@ -297,7 +339,7 @@ public class ModInfoPlus extends Mod {
             }
             
         }, error -> {
-            Log.err("Failed to fetch releases", error);
+            Log.err("Failed to fetch releases: " + error.getMessage());
             ModStats errorStats = new ModStats();
             errorStats.error = true;
             errorStats.downloads = -1;
@@ -305,7 +347,8 @@ public class ModInfoPlus extends Mod {
         });
     }
     
-    // UI Helper methods
+    // ========== HELPER METHODS ==========
+    
     private String formatNumber(int num) {
         if (num < 1000) return String.valueOf(num);
         if (num < 1000000) return String.format("%.1fK", num / 1000.0);
@@ -314,12 +357,20 @@ public class ModInfoPlus extends Mod {
     
     private String formatDate(String dateString) {
         if (dateString == null) return "N/A";
-        // Simplified date formatting
-        return dateString.substring(0, 10);
+        try {
+            return dateString.substring(0, 10);
+        } catch (Exception e) {
+            return "N/A";
+        }
     }
     
     private boolean isInWatchlist(ModInfo mod) {
-        return watchlist.contains(m -> m.getKey().equals(mod.getKey()));
+        for (ModInfo m : watchlist) {
+            if (m.getKey().equals(mod.getKey())) {
+                return true;
+            }
+        }
+        return false;
     }
     
     private void toggleWatchlist(ModInfo mod) {
@@ -341,8 +392,10 @@ public class ModInfoPlus extends Mod {
         
         saveWatchlist();
     }
+
+    // CONTINUED IN PART 2...
+}// ========== UI METHODS - PART 2 ==========
     
-    // Main UI
     private void showStatsDialog() {
         BaseDialog dialog = new BaseDialog("ModInfo+ v1.5");
         dialog.cont.clear();
@@ -350,16 +403,19 @@ public class ModInfoPlus extends Mod {
         // Top bar
         Table topBar = new Table();
         
-        int unreadCount = notifications.count(n -> !n.read);
+        int unreadCount = 0;
+        for (Notification n : notifications) {
+            if (!n.read) unreadCount++;
+        }
+        
         String notifText = unreadCount > 0 ? "Inbox (" + unreadCount + ")" : "Inbox";
         
-        topBar.button(notifText, Icon.info, this::showNotificationsDialog).size(140f, 50f);
-        topBar.button("Tutorial", Icon.book, this::showTutorialDialog).size(140f, 50f);
+        topBar.button(notifText, Icon.info, () -> showNotificationsDialog()).size(140f, 50f);
+        topBar.button("Tutorial", Icon.book, () -> showTutorialDialog()).size(140f, 50f);
         
         dialog.cont.add(topBar).row();
         dialog.cont.row();
         
-        // Loading message
         dialog.cont.add("[yellow]Loading mods from GitHub...").row();
         
         dialog.buttons.button("Close", dialog::hide).size(120f, 55f);
@@ -378,12 +434,11 @@ public class ModInfoPlus extends Mod {
             discoverCache.clear();
             lastDiscoverFetchTime = 0;
             dialog.hide();
-            Time.runTask(1f, this::showStatsDialog);
+            Timer.schedule(() -> showStatsDialog(), 0.1f);
         }).size(120f, 55f);
         
         dialog.show();
         
-        // Fetch mods asynchronously
         fetchDiscoverMods(mods -> {
             dialog.cont.clear();
             dialog.cont.add(topBar).row();
@@ -396,7 +451,6 @@ public class ModInfoPlus extends Mod {
                 dialog.cont.add("[lime]Loaded " + mods.size + " mods").row();
                 dialog.cont.row();
                 
-                // Display mods
                 int start = currentPage * MODS_PER_PAGE;
                 int end = Math.min(start + MODS_PER_PAGE, mods.size);
                 
@@ -420,8 +474,8 @@ public class ModInfoPlus extends Mod {
                     dialog.cont.add(modTable).fillX().row();
                     dialog.cont.image().color(Color.gray).fillX().height(1f).pad(5f).row();
                     
-                    // Fetch stats with delay
-                    float delay = (i - start) * 0.3f;
+                    final int index = i;
+                    float delay = (index - start) * 0.3f;
                     Timer.schedule(() -> {
                         fetchModStats(mod, stats -> {
                             if (stats.downloads >= 0) {
@@ -437,7 +491,6 @@ public class ModInfoPlus extends Mod {
                     }, delay);
                 }
                 
-                // Navigation
                 dialog.cont.row();
                 Table navTable = new Table();
                 int totalPages = (int) Math.ceil(mods.size / (float) MODS_PER_PAGE);
@@ -446,7 +499,7 @@ public class ModInfoPlus extends Mod {
                     navTable.button("< Prev", () -> {
                         currentPage--;
                         dialog.hide();
-                        Time.runTask(1f, this::showStatsDialog);
+                        Timer.schedule(() -> showStatsDialog(), 0.1f);
                     }).size(100f, 50f);
                 }
                 
@@ -456,7 +509,7 @@ public class ModInfoPlus extends Mod {
                     navTable.button("Next >", () -> {
                         currentPage++;
                         dialog.hide();
-                        Time.runTask(1f, this::showStatsDialog);
+                        Timer.schedule(() -> showStatsDialog(), 0.1f);
                     }).size(100f, 50f);
                 }
                 
@@ -478,7 +531,7 @@ public class ModInfoPlus extends Mod {
         actionTable.button(isInWatchlist(mod) ? "Watching" : "Watch", Icon.eye, () -> {
             toggleWatchlist(mod);
             dialog.hide();
-            Time.runTask(1f, () -> showModDetails(mod));
+            Timer.schedule(() -> showModDetails(mod), 0.1f);
         });
         
         dialog.cont.add(actionTable).row();
@@ -491,7 +544,6 @@ public class ModInfoPlus extends Mod {
         dialog.buttons.button("Back", dialog::hide).size(120f, 55f);
         dialog.show();
         
-        // Fetch stats
         fetchModStats(mod, stats -> {
             if (stats.downloads >= 0) {
                 statusLabel.setText(formatNumber(stats.downloads) + " downloads | " + 
