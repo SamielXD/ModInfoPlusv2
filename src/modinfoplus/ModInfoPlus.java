@@ -1,6 +1,3 @@
-// ModInfoPlus.java - PART 1 of 2
-// Copy this entire file as src/modinfoplus/ModInfoPlus.java
-
 package modinfoplus;
 
 import arc.*;
@@ -11,6 +8,8 @@ import arc.scene.ui.*;
 import arc.scene.ui.layout.*;
 import arc.graphics.*;
 import arc.func.*;
+import arc.net.*;
+import arc.util.Http.*;
 import mindustry.*;
 import mindustry.game.EventType.*;
 import mindustry.gen.*;
@@ -21,7 +20,6 @@ import mindustry.ui.dialogs.*;
 public class ModInfoPlus extends Mod {
     
     // Constants
-    private static final String GITHUB_TOKEN_PARTS = "ghp_,hEuol7gs0,TBzjg1Yeg,42mV70oH,L7pK2UHZmW";
     private static final int COOLDOWN_SECONDS = 60;
     private static final int CACHE_TIME_MS = 300000;
     private static final int DISCOVER_CACHE_TIME_MS = 900000;
@@ -58,7 +56,10 @@ public class ModInfoPlus extends Mod {
             loadNotifications();
             loadDiscoverCache();
             
-            Vars.ui.menufrag.addButton("ModInfo+", Icon.info, () -> showStatsDialog());
+            Vars.ui.menuGroup.addChild(Vars.ui.menuGroup.fill(t -> {
+                t.bottom();
+                t.button("ModInfo+", Icon.info, () -> showStatsDialog()).size(210f, 60f);
+            }));
         });
     }
     
@@ -201,13 +202,7 @@ public class ModInfoPlus extends Mod {
         } catch (Exception e) {
             Log.err("Failed to save discover cache", e);
         }
-    }
-    
-    // ========== GITHUB API METHODS ==========
-    
-    private String getGitHubToken() {
-        return GITHUB_TOKEN_PARTS.replace(",", "");
-    }
+    }// ========== GITHUB API METHODS (v154.3 compatible) ==========
     
     private void fetchDiscoverMods(Cons<Seq<ModInfo>> callback) {
         long now = Time.millis();
@@ -226,9 +221,14 @@ public class ModInfoPlus extends Mod {
         
         String url = "https://api.github.com/search/repositories?q=topic:mindustry-mod+fork:false+stars:>=1&sort=updated&order=desc&per_page=100";
         
-        Http.get(url, result -> {
+        HttpRequest req = new HttpRequest();
+        req.method = HttpMethod.GET;
+        req.url = url;
+        req.timeout = 10000;
+        
+        Core.net.httpRequest(req, result -> {
             try {
-                JsonValue json = new JsonReader().parse(result);
+                JsonValue json = new JsonReader().parse(result.getResultAsString());
                 JsonValue items = json.get("items");
                 
                 Seq<ModInfo> mods = new Seq<>();
@@ -280,7 +280,7 @@ public class ModInfoPlus extends Mod {
             }
             
         }, error -> {
-            Log.err("Failed to fetch from GitHub: " + error.getMessage());
+            Log.err("Failed to fetch from GitHub: @", error);
             isLoadingMods = false;
             Core.app.post(() -> callback.get(discoverCache));
         });
@@ -300,9 +300,14 @@ public class ModInfoPlus extends Mod {
         
         String url = "https://api.github.com/repos/" + mod.owner + "/" + mod.repo + "/releases";
         
-        Http.get(url, result -> {
+        HttpRequest req = new HttpRequest();
+        req.method = HttpMethod.GET;
+        req.url = url;
+        req.timeout = 10000;
+        
+        Core.net.httpRequest(req, result -> {
             try {
-                JsonValue releases = new JsonReader().parse(result);
+                JsonValue releases = new JsonReader().parse(result.getResultAsString());
                 
                 ModStats stats = new ModStats();
                 stats.downloads = 0;
@@ -331,7 +336,7 @@ public class ModInfoPlus extends Mod {
                 Core.app.post(() -> callback.get(stats));
                 
             } catch (Exception e) {
-                Log.err("Failed to parse releases: " + e.getMessage());
+                Log.err("Failed to parse releases: @", e);
                 ModStats errorStats = new ModStats();
                 errorStats.error = true;
                 errorStats.downloads = -1;
@@ -339,7 +344,7 @@ public class ModInfoPlus extends Mod {
             }
             
         }, error -> {
-            Log.err("Failed to fetch releases: " + error.getMessage());
+            Log.err("Failed to fetch releases: @", error);
             ModStats errorStats = new ModStats();
             errorStats.error = true;
             errorStats.downloads = -1;
@@ -391,10 +396,7 @@ public class ModInfoPlus extends Mod {
         }
         
         saveWatchlist();
-    }
-
-    // CONTINUED IN PART 2...
-}// ========== UI METHODS - PART 2 ==========
+    }// ========== UI METHODS ==========
     
     private void showStatsDialog() {
         BaseDialog dialog = new BaseDialog("ModInfo+ v1.5");
