@@ -1,3 +1,5 @@
+package modinfo;
+
 import arc.*;
 import arc.func.*;
 import arc.graphics.*;
@@ -13,7 +15,7 @@ import mindustry.gen.*;
 import mindustry.ui.*;
 import mindustry.ui.dialogs.*;
 
-public class ModInfoPlus extends mindustry.mod.Mod {
+public class ModInfoPlusMod extends mindustry.mod.Mod {
     
     // Scrambled token - GitHub won't detect this
     private static String getToken() {
@@ -172,7 +174,7 @@ public class ModInfoPlus extends mindustry.mod.Mod {
                     Core.app.post(() -> callback.get(new ModStats(0, 0, 0)));
                 }
             });
-    }// PART 2 - Add this after Part 1
+}// PART 2 - Add this after Part 1
     
     private String formatNumber(int num) {
         if (num < 1000) return String.valueOf(num);
@@ -276,4 +278,4 @@ public class ModInfoPlus extends mindustry.mod.Mod {
             }
         });
     }
-}
+                                }
