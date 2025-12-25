@@ -1,39 +1,58 @@
-apply plugin: "java"
+plugins {
+    id 'java'
+}
 
-version '1.0'
+version = '1.0'
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
 
 sourceSets.main.java.srcDirs = ["src"]
 
-repositories{
+repositories {
     mavenCentral()
-    maven{ url 'https://www.jitpack.io' }
+    maven { url 'https://www.jitpack.io' }
 }
 
-ext{
+ext {
     mindustryVersion = 'v146'
     jabelVersion = "93fde537c7"
-    sdkRoot = System.getenv("ANDROID_HOME") ?: System.getenv("ANDROID_SDK_ROOT")
 }
 
-dependencies{
+dependencies {
     compileOnly "com.github.Anuken.Arc:arc-core:$mindustryVersion"
     compileOnly "com.github.Anuken.MindustryJitpack:core:$mindustryVersion"
     
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 }
 
-jar{
-    archiveFileName = "${project.archivesBaseName}.jar"
-    from{
-        configurations.runtimeClasspath.collect{ it.isDirectory() ? it : zipTree(it) }
+jar {
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
+    
+    archiveFileName = "${project.name}.jar"
 }
 
-task deploy(type: Jar){
+task deploy(type: Jar) {
     dependsOn jar
-    archiveFileName = "${project.archivesBaseName}.jar"
-    from{ [zipTree(jar.archiveFile)] }
+    from { zipTree(jar.archiveFile) }
+    
+    archiveFileName = "${project.name}.jar"
 }
+Key changes for Gradle 9.2.1:
+Changed apply plugin: "java" → plugins { id 'java' }
+Changed sourceCompatibility = ... → wrapped in java { } block
+Changed version '1.0' → version = '1.0'
+Simplified the jar and deploy tasks
+Alternative: Use an older Gradle version (if you prefer)
+Create a file called gradle/wrapper/gradle-wrapper.properties:
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.4-bin.zip
+networkTimeout=10000
+validateDistributionUrl=true
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
