@@ -42,17 +42,3 @@ task deploy(type: Jar) {
     
     archiveFileName = "${project.name}.jar"
 }
-Key changes for Gradle 9.2.1:
-Changed apply plugin: "java" → plugins { id 'java' }
-Changed sourceCompatibility = ... → wrapped in java { } block
-Changed version '1.0' → version = '1.0'
-Simplified the jar and deploy tasks
-Alternative: Use an older Gradle version (if you prefer)
-Create a file called gradle/wrapper/gradle-wrapper.properties:
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.4-bin.zip
-networkTimeout=10000
-validateDistributionUrl=true
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
