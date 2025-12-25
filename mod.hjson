@@ -4,7 +4,7 @@
   "author": "YourName",
   "description": "Track Mindustry mod statistics from GitHub",
   "version": "1.5",
-  "minGameVersion": "146",
+  "minGameVersion": "154",
   "java": true,
   "main": "modinfoplus.ModInfoPlus",
   "hidden": false
