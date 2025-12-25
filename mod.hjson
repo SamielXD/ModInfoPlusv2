@@ -2,9 +2,10 @@
   "name": "modinfo-plus",
   "displayName": "ModInfo+",
   "author": "YourName",
-  "description": "Track Mindustry mod statistics",
+  "description": "Track Mindustry mod statistics from GitHub",
   "version": "1.5",
-  "minGameVersion": "154",
+  "minGameVersion": "146",
   "java": true,
-  "main": "modinfoplus.ModInfoPlus"
+  "main": "modinfoplus.ModInfoPlus",
+  "hidden": false
 }
