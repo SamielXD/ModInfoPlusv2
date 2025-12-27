@@ -4,5 +4,5 @@ author: "SamielXD"
 description: "Mod statistics and discovery"
 version: "1.5"
 minGameVersion: "154"
-main: "modinfo.ModInfoPlus"
+main: "modinfo.ModInfoPlusMod"
 java: true
