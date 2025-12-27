@@ -1,5 +1,3 @@
-package modinfo;
-
 import arc.*;
 import arc.func.*;
 import arc.graphics.*;
