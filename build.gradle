@@ -1,4 +1,3 @@
-
 plugins {
     id 'java'
 }
@@ -30,6 +29,7 @@ dependencies {
 
 jar {
     archiveFileName = 'ModInfoPlusV2.jar'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     
     from(sourceSets.main.output) {
         include '**/*.class'
