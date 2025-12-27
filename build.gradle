@@ -1,3 +1,4 @@
+
 plugins {
     id 'java'
 }
@@ -5,9 +6,12 @@ plugins {
 version = '1.5'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
-    }
+    sourceCompatibility = 8
+    targetCompatibility = 8
+}
+
+sourceSets.main {
+    java.srcDirs = ['src']
 }
 
 repositories {
@@ -17,19 +21,19 @@ repositories {
 
 ext {
     mindustryVersion = 'v154.3'
-    jabelVersion = '93fde537c7'
 }
 
 dependencies {
     compileOnly "com.github.Anuken.Mindustry:core:${mindustryVersion}"
     compileOnly "com.github.Anuken.Mindustry:server:${mindustryVersion}"
-    annotationProcessor "com.github.Anuken:jabel:${jabelVersion}"
 }
 
 jar {
-    archiveFileName = 'ModInfoPlus.jar'
+    archiveFileName = 'ModInfoPlusV2.jar'
     
-    from(sourceSets.main.output)
+    from(sourceSets.main.output) {
+        include '**/*.class'
+    }
     
     from(rootDir) {
         include 'mod.hjson'
@@ -39,11 +43,12 @@ jar {
     from('assets/') {
         include '**'
     }
+    
+    from('sprites/') {
+        include '**'
+    }
 }
 
-tasks.withType(JavaCompile).configureEach {
+tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
-    sourceCompatibility = 8
-    targetCompatibility = 8
-    options.compilerArgs.addAll(['--release', '8'])
 }
