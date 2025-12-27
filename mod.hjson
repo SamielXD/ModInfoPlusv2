@@ -1,8 +1,8 @@
 name: "ModInfoPlus"
 displayName: "ModInfo+"
 author: "SamielXD"
-description: "Mod statistics and discovery"
-version: "1.5"
+description: "Simple mod browser"
+version: "2.0"
 minGameVersion: "154"
-main: "modinfo.ModInfoPlusMod"
+main: "ModInfoPlusMod"
 java: true
